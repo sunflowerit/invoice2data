@@ -40,7 +40,7 @@ def read_templates(folder):
 
                 # Test if all required fields are in template:
                 assert 'keywords' in tpl.keys(), 'Missing keywords field.'
-                required_fields = ['date', 'amount', 'invoice_number']
+                required_fields = ['date', 'invoice_number']
                 assert len(set(required_fields).intersection(tpl['fields'].keys())) == len(required_fields), \
                     'Missing required key in template {} {}. Found {}'.format(name, path, tpl['fields'].keys())
                 
@@ -228,13 +228,19 @@ class InvoiceTemplate(OrderedDict):
                     current_row = {}
                     continue
             match = re.search(self['lines']['line'], line)
-            if match:
+            if match and ('first_line' in self['lines']) and current_row:
                 for field, value in match.groupdict().iteritems():
                     current_row[field] = '%s%s%s' % (
                         current_row.get(field, ''),
                         current_row.get(field, '') and '\n' or '',
                         value.strip()
                     )
+                continue
+            if match:
+                for field, value in match.groupdict().iteritems():
+                    current_row[field] = value.strip()
+                lines.append(current_row)
+                current_row = {}
                 continue
             logger.warning(
                 'ignoring *%s* because it doesn\'t match anything', line
